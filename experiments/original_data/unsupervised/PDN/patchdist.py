@@ -128,16 +128,16 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Data Loading
 # -----------------------
 # Training dataset: assumed to be all normal images (for distillation)
-train_data_path = "/mnt/anom_proj/data/New/train"  # update path if needed
+train_data_path = "/mnt/anom_proj/data/original data/train"  # update path if needed
 train_dataset = CustomImageDataset(root_dir=train_data_path, transform=transform, return_filename=False)
 train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
 # Validation and Test datasets (with filenames for later anomaly detection)
-val_data_path = "/mnt/anom_proj/data/New/validation"  # update path if needed
+val_data_path = "/mnt/anom_proj/data/original data/validation"  # update path if needed
 val_dataset = CustomImageDataset(root_dir=val_data_path, transform=transform, return_filename=True)
 val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
-test_data_path = "/mnt/anom_proj/data/New/test"  # update path if needed
+test_data_path = "/mnt/anom_proj/data/original data/test"  # update path if needed
 test_dataset = CustomImageDataset(root_dir=test_data_path, transform=transform, return_filename=True)
 test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
@@ -312,7 +312,7 @@ print("Test anomalies detected:", test_anomaly_count, "out of", len(test_dataset
 # -----------------------
 # (Optional) Evaluation with Ground Truth Labels
 # -----------------------
-labels_csv_path = "/mnt/anom_proj/data/New/labels.csv"  # update if needed
+labels_csv_path = "/mnt/anom_proj/data/original data/labels.csv"  # update if needed
 labels_df = pd.read_csv(labels_csv_path)
 label_dict = {row['filename']: row['label'] for _, row in labels_df.iterrows() if row['split'] == 'test'}
 

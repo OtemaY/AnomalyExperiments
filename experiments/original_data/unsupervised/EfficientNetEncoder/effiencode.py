@@ -151,9 +151,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # -----------------------
 # 6. Data Loading
 # -----------------------
-train_data_path = "/mnt/anom_proj/data/New/train"  # Update path if needed
-val_data_path = "/mnt/anom_proj/data/New/validation"
-test_data_path = "/mnt/anom_proj/data/New/test"
+train_data_path = "/mnt/anom_proj/data/original data/train"  # Update path if needed
+val_data_path = "/mnt/anom_proj/data/original data/validation"
+test_data_path = "/mnt/anom_proj/data/original data/test"
 
 train_dataset = CustomImageDataset(root_dir=train_data_path, transform=transform, return_filename=False)
 train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
@@ -340,7 +340,7 @@ print("Test anomalies detected:", test_anomaly_count, "out of", len(test_dataset
 # -----------------------
 # 14. (Optional) Evaluation with Ground Truth Labels
 # -----------------------
-labels_csv_path = "/mnt/anom_proj/data/New/labels.csv"  # Update path if needed
+labels_csv_path = "/mnt/anom_proj/data/original data/labels.csv"  # Update path if needed
 labels_df = pd.read_csv(labels_csv_path)
 label_dict = {row['filename']: row['label'] for _, row in labels_df.iterrows() if row['split'] == 'test'}
 

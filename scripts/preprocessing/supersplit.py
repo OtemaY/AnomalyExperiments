@@ -7,9 +7,9 @@ import csv
 from sklearn.model_selection import train_test_split
 
 # Set actual paths
-train_dir = "/mnt/anom_proj/data/New/train"
-val_dir = "/mnt/anom_proj/data/New/validation"
-output_base = "/mnt/anom_proj/data/New/"
+train_dir = "/mnt/anom_proj/data/original data/train"
+val_dir = "/mnt/anom_proj/data/original data/validation"
+output_base = "/mnt/anom_proj/data/original data/"
 
 # Output directories
 new_train_dir = os.path.join(output_base, "super_train")
@@ -88,5 +88,5 @@ with open(csv_path, mode="w", newline="") as f:
     writer.writerow(["split", "filename", "label"])
     writer.writerows(csv_rows)
 
-print("✅ All done! New splits created and test set added to CSV.")
+print("✅ All done! original data splits created and test set added to CSV.")
 print(f"📄 CSV saved to: {csv_path}")
