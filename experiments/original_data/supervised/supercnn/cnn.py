@@ -1,3 +1,4 @@
+# This script is for running a CNN Model for supervised learning
 import os
 import pandas as pd
 from PIL import Image
@@ -14,26 +15,19 @@ import random
 from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score, accuracy_score
 import csv
 import seaborn as sns
-from sklearn.neighbors import KernelDensity  # for KDE
-
-
-threshold =0
-patience =0
 
 # Mapping from CSV split names to actual folder names
 SPLIT_TO_FOLDER = {
     'train': 'output_train',
-    'validation': 'output_val',
+    'validation': 'output_val'
 }
 
 class AnomalyDataset(Dataset):
     def __init__(self, csv_file, split, root_dir, transform=None, train_only_normals=True):
         self.data = pd.read_csv(csv_file)
         self.data = self.data[self.data['split'] == split]
-
         if train_only_normals and split == 'train':
             self.data = self.data[self.data['label'] == 0]
-
         self.root_dir = root_dir
         self.transform = transform
         self.split = split
@@ -51,51 +45,15 @@ class AnomalyDataset(Dataset):
             image = self.transform(image)
         return image, label
 
-# ---- KD-CAE MODEL DEFINITION ----
-class KD_CAE(nn.Module):
-    def __init__(self, latent_dim=128):
-        super(KD_CAE, self).__init__()
-        # encoder
-        self.encoder = nn.Sequential(
-            nn.Conv2d(3, 32, 4, stride=2, padding=1),  # 112x112
-            nn.ReLU(True),
-            nn.Conv2d(32, 64, 4, stride=2, padding=1), # 56x56
-            nn.ReLU(True),
-            nn.Conv2d(64, 128, 4, stride=2, padding=1),# 28x28
-            nn.ReLU(True),
-            nn.Conv2d(128, 256, 4, stride=2, padding=1),#14x14
-            nn.ReLU(True),
-            nn.Flatten(),
-            nn.Linear(256*14*14, latent_dim),
-        )
-        # decoder
-        self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, 256*14*14),
-            nn.Unflatten(1, (256,14,14)),
-            nn.ReLU(True),
-            nn.ConvTranspose2d(256,128,4,2,1), #28x28
-            nn.ReLU(True),
-            nn.ConvTranspose2d(128,64,4,2,1),  #56x56
-            nn.ReLU(True),
-            nn.ConvTranspose2d(64,32,4,2,1),   #112x112
-            nn.ReLU(True),
-            nn.ConvTranspose2d(32,3,4,2,1),    #224x224
-            nn.Sigmoid(),  # normalized [0,1]
-        )
-
-    def forward(self, x):
-        z = self.encoder(x)
-        recon = self.decoder(z)
-        return recon, z
-
 # ---- Data Preparation ----
 img_size = 224
 transform = transforms.Compose([
     transforms.Resize((img_size, img_size)),
     transforms.ToTensor(),
 ])
+
 csv_file = "/mnt/anom_proj/data/New/split_labels.csv"
-root_dir = "/mnt/anom_proj/data/New"
+root_dir  = "/mnt/anom_proj/data/New"
 
 train_dataset = AnomalyDataset(csv_file, 'train', root_dir, transform, train_only_normals=False)
 val_dataset   = AnomalyDataset(csv_file, 'validation', root_dir, transform, train_only_normals=False)
@@ -107,131 +65,143 @@ test_loader  = DataLoader(test_dataset,  batch_size=32, shuffle=False)
 
 # ---- Model Setup ----
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = KD_CAE(latent_dim=128).to(device)
+
+class CustomCNN(nn.Module):
+    def __init__(self, img_size=224, num_pools=5):
+        super(CustomCNN, self).__init__()
+        # Five conv+pool blocks
+        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(16, 16, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(16, 16, kernel_size=3, padding=1)
+        self.conv4 = nn.Conv2d(16, 16, kernel_size=3, padding=1)
+        self.conv5 = nn.Conv2d(16, 16, kernel_size=3, padding=1)
+        self.relu  = nn.ReLU()
+        self.pool  = nn.MaxPool2d(2, 2)
+
+        # compute spatial size after all the pooling layers
+        # e.g. 224 // (2**5) == 7
+        final_spatial = img_size // (2 ** num_pools)
+
+        self.flatten     = nn.Flatten()
+        self.fc1         = nn.Linear(16 * final_spatial * final_spatial, 128)
+        self.hidden_relu = nn.ReLU()
+        self.fc2         = nn.Linear(128, 1)
+        self.sigmoid     = nn.Sigmoid()
+
+    def forward(self, x):
+        x = self.pool(self.relu(self.conv1(x)))
+        x = self.pool(self.relu(self.conv2(x)))
+        x = self.pool(self.relu(self.conv3(x)))
+        x = self.pool(self.relu(self.conv4(x)))
+        x = self.pool(self.relu(self.conv5(x)))
+        x = self.flatten(x)
+        x = self.hidden_relu(self.fc1(x))
+        x = self.sigmoid(self.fc2(x))
+        return x
+
+model = CustomCNN().to(device)
 model_name = model.__class__.__name__
 
 # ---- Loss and Optimizer ----
-criterion = nn.MSELoss()          # reconstruction error
-optimizer = optim.Adam(model.parameters(), lr=1e-4)
+criterion = nn.BCELoss()
+optimizer = optim.RMSprop(model.parameters(), lr=1e-4)
 
-# ---- Train/Val Loop ----
+# ---- Train & Validation ----
 train_losses, val_losses = [], []
 num_epochs = 30
 train_start = time.time()
 
 for epoch in range(num_epochs):
     print(f'Epoch [{epoch+1}/{num_epochs}]')
+    # Training
     model.train()
     running_loss = 0.0
-    for images, _ in train_loader:
+    for images, labels in train_loader:
         images = images.to(device)
-        recon, _ = model(images)
-        loss = criterion(recon, images)
-
+        labels = labels.to(device).float().unsqueeze(1)
+        outputs = model(images)
+        loss = criterion(outputs, labels)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
+    avg_train_loss = running_loss / len(train_loader)
+    train_losses.append(avg_train_loss)
+    print(f'  Train Loss: {avg_train_loss:.4f}')
 
-    avg_train = running_loss / len(train_loader)
-    train_losses.append(avg_train)
-    print(f'Train Loss: {avg_train:.4f}')
-
+    # Validation
     model.eval()
-    running_val = 0.0
+    running_val_loss = 0.0
     with torch.no_grad():
-        for images, _ in val_loader:
+        for images, labels in val_loader:
             images = images.to(device)
-            recon, _ = model(images)
-            running_val += criterion(recon, images).item()
-    avg_val = running_val / len(val_loader)
-    val_losses.append(avg_val)
-    print(f'Val Loss: {avg_val:.4f}')
+            labels = labels.to(device).float().unsqueeze(1)
+            outputs = model(images)
+            running_val_loss += criterion(outputs, labels).item()
+    avg_val_loss = running_val_loss / len(val_loader)
+    val_losses.append(avg_val_loss)
+    print(f'  Val   Loss: {avg_val_loss:.4f}')
 
-train_end = time.time()
-print('Training and Validation Complete.')
+train_duration = time.time() - train_start
+torch.save(model.state_dict(), f"models/{model_name}_final.pth")
 
-# ---- FIT KDE ON TRAIN LATENTS ----
-model.eval()
-latents = []
-with torch.no_grad():
-    for images, _ in train_loader:
-        images = images.to(device)
-        _, z = model(images)
-        latents.append(z.cpu().numpy())
-latents = np.concatenate(latents, axis=0)
-kde = KernelDensity(kernel='gaussian', bandwidth=1.0).fit(latents)
-
-# ---- Plot Loss Curves ----
+# ---- Plot Loss Curve ----
 os.makedirs("results/plots", exist_ok=True)
-plt.figure(figsize=(12, 6))
-epochs_run = len(train_losses)
-plt.plot(range(1, epochs_run+1), train_losses, marker='o', label="Training Loss")
-plt.plot(range(1, epochs_run+1), val_losses, marker='o', label="Validation Loss")
-plt.xlabel("Epoch"); plt.ylabel("MSE Loss")
-plt.title(f"{model_name} Reconstruction Loss over {epochs_run} epochs")
+plt.figure(figsize=(12,6))
+plt.plot(range(1, num_epochs+1), train_losses, marker='o', label="Train Loss")
+plt.plot(range(1, num_epochs+1), val_losses,   marker='o', label="Val Loss")
+plt.xlabel("Epoch"); plt.ylabel("Loss")
+plt.title(f"{model_name} Loss over {num_epochs} Epochs")
 plt.legend(); plt.grid(True); plt.tight_layout()
 plt.savefig(f"results/plots/{model_name}_loss_curve.png")
 plt.show()
 
-# ---- Testing and Anomaly Scoring ----
+# ---- Testing & Metrics ----
 print("\nModel Testing")
 test_start = time.time()
 model.eval()
-
+running_test_loss, correct, total = 0.0, 0, 0
 test_records = []
-correct = 0
-total = 0
 
 with torch.no_grad():
     for idx, (images, labels) in enumerate(test_loader):
         images = images.to(device)
-        recon, z = model(images)
-        # reconstruction error per sample
-        errors = torch.mean((recon - images)**2, dim=[1,2,3]).cpu().numpy()
-        # log-density per sample
-        zs = z.cpu().numpy()
-        logdens = kde.score_samples(zs)
-        # anomaly score = error - log-density
-        scores = errors - logdens
-        preds = (scores > threshold).astype(int)
-
+        labels = labels.to(device).float().unsqueeze(1)
+        outputs = model(images)
+        running_test_loss += criterion(outputs, labels).item()
+        preds = (outputs > 0.5).int()
         total += labels.size(0)
-        correct += (preds == labels.numpy()).sum()
+        correct += (preds == labels.int()).sum().item()
 
-        batch_start = idx * test_loader.batch_size
-        fnames = test_dataset.data.iloc[batch_start:batch_start+len(scores)]['filename'].tolist()
-        for f, t, p in zip(fnames, labels.numpy(), preds):
-            test_records.append({"filename":f, "true_label":int(t), "predicted_label":int(p)})
+        start = idx * test_loader.batch_size
+        fnames = test_dataset.data.iloc[start:start+images.size(0)]['filename'].tolist()
+        for f, t, p in zip(fnames, labels.cpu().numpy().flatten(), preds.cpu().numpy().flatten()):
+            test_records.append({"filename": f, "true_label": int(t), "predicted_label": int(p)})
 
-avg_test_loss = np.mean(errors)  # approx avg reconstruction loss
+avg_test_loss = running_test_loss / len(test_loader)
 test_acc = 100 * correct / total
-print(f'Test Recon Loss: {avg_test_loss:.4f} | Test Accuracy: {test_acc:.2f}%')
+print(f"Test Loss: {avg_test_loss:.4f} | Test Acc: {test_acc:.2f}%")
+inference_duration = time.time() - test_start
 
-# ---- Rest of your existing evaluation & logging (unchanged) ----
 y_true = [r["true_label"] for r in test_records]
 y_pred = [r["predicted_label"] for r in test_records]
-acc  = accuracy_score(y_true, y_pred)
-prec = precision_score(y_true, y_pred, zero_division=0)
-rec  = recall_score(y_true, y_pred, zero_division=0)
-f1   = f1_score(y_true, y_pred, zero_division=0)
-cm   = confusion_matrix(y_true, y_pred)
-
-print("\nEvaluation Metrics:")
-print(f"Accuracy:  {acc:.4f}")
-print(f"Precision: {prec:.4f}")
-print(f"Recall:    {rec:.4f}")
-print(f"F1 Score:  {f1:.4f}")
+acc, prec, rec, f1 = (
+    accuracy_score(y_true, y_pred),
+    precision_score(y_true, y_pred, zero_division=0),
+    recall_score(y_true, y_pred, zero_division=0),
+    f1_score(y_true, y_pred, zero_division=0),
+)
+cm = confusion_matrix(y_true, y_pred)
+print(f"\nAccuracy: {acc:.4f}\nPrecision: {prec:.4f}\nRecall: {rec:.4f}\nF1 Score: {f1:.4f}")
 print("\nConfusion Matrix:")
 print(cm)
 
-# Save test results
-results_df = pd.DataFrame(test_records)
 os.makedirs('results/plots/test_results', exist_ok=True)
-results_csv_path = f"results/plots/test_results/{model_name}_test_results.csv"
-results_df.to_csv(results_csv_path, index=False)
-print(f"Test results saved to {results_csv_path}")
+pd.DataFrame(test_records).to_csv(f"results/plots/test_results/{model_name}_test_results.csv", index=False)
 
+# ---- Experiment Logging ----
+patience =0
+threshold = 0.0
 
 def log_experiment_run(model, criterion, optimizer, train_dataloader, val_dataloader, test_dataloader,
                        epoch, patience, train_duration, inference_duration,
@@ -335,7 +305,7 @@ log_experiment_run(
     rec=rec,
     f1=f1,
     cm=cm,
-    save_paths=True, 
-    save_model=True, 
+    save_paths=True,
+    save_model=True,
     log_csv=True,
 )
