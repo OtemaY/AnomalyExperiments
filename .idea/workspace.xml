@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a8483c5b-ee33-41cb-ac78-1d8efaacfba7" name="Changes" comment="first commit">
-      <change afterPath="$PROJECT_DIR$/scripts/preprocessing/supersplit.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/experiments/original_data/unsupervised/PDN/patchdist.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -39,6 +39,9 @@
   &quot;associatedIndex&quot;: 1
 }</component>
   <component name="ProjectId" id="2wJooIhFJ6uuHZrRSaiWgkXbr3M" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
