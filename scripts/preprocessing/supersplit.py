@@ -1,4 +1,4 @@
-# This script splits the data for supervised learning
+# This script creates the CSV for the data for supervised learning
 
 import os
 import shutil
