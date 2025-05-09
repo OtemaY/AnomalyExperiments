@@ -5,10 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a8483c5b-ee33-41cb-ac78-1d8efaacfba7" name="Changes" comment="first commit">
-      <change afterPath="$PROJECT_DIR$/experiments/original_data/supervised/supercnn/cnn.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/experiments/original_data/supervised/kdcae/KD_CAE_loss_curve.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/experiments/original_data/supervised/kdcae/superkd.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
