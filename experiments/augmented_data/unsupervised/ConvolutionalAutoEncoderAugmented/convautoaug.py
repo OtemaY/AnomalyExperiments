@@ -113,7 +113,7 @@ model = AugConvAutoencoder().to(device)
 model_name = model.__class__.__name__
 
 # Use it in a string
-print(f"Training {model_name} on grayscale concrete data...")
+print(f"Training {model_name} on augmented concrete data...")
 
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -125,7 +125,7 @@ best_val_loss = float('inf')
 patience = 3
 counter = 0
 
-epochs = 2  # You can still cap it, early stopping will kick in
+epochs = 30  # You can still cap it, early stopping will kick in
 
 train_start = time.time()
 
@@ -184,22 +184,20 @@ from matplotlib.ticker import MultipleLocator
 
 os.makedirs("plots", exist_ok=True)
 plt.figure(figsize=(12, 6))
-plt.plot(range(1, epochs+1), train_losses, marker='o', label="Training Loss")
-plt.plot(range(1, epochs+1), val_losses, marker='o', label="Validation Loss")
+epochs_run = len(train_losses)
+plt.plot(range(1, epochs_run+1), train_losses, marker='o', label="Training Loss")
+plt.plot(range(1, epochs_run+1), val_losses, marker='o', label="Validation Loss")
 
-#plt.plot(train_losses, label="Train Loss")
-#plt.plot(val_losses, label="Validation Loss")
 plt.xlabel("Epoch")
 plt.ylabel("Loss")
-plt.title(f"{model.__class__.__name__} Training vs Validation Loss over" f" {epochs} epochs")
+plt.title(f"{model.__class__.__name__} Training vs Validation Loss over" f" {epochs_run} epochs")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
 
 # Save the plot
 plt.savefig(f"results/plots/{model.__class__.__name__}_loss_curve.png")
-
-plt.xlim(0, 31)  # Ensure the x-axis covers 0 to 31 to "zoom out" the graph
+plt.xlim(0, epochs_run + 1)
 # Adjust y-axis to cover a bit beyond the min and max losses
 ymin = min(min(train_losses), min(val_losses)) - 0.1
 ymax = max(max(train_losses), max(val_losses)) + 0.1
@@ -245,7 +243,7 @@ plt.axvline(threshold_4, color='red', linestyle='--', linewidth=2, label=f'Mean 
 # plt.axvline(threshold, color='black', linestyle='--', linewidth=2, label=f'Threshold = {threshold:.6f}')
 
 
-plt.title(f"Distribution of Reconstruction Errors (Augmented Training Data) - {model.__class__.__name__}")
+plt.title(f"Distribution of Reconstruction Errors (Training Data) - {model.__class__.__name__}")
 plt.xlabel("Reconstruction Error")
 plt.ylabel("Frequency")
 plt.legend()
@@ -315,9 +313,8 @@ print(f"Precision: {prec:.4f}")
 print(f"Recall:    {rec:.4f}")
 print(f"F1 Score:  {f1:.4f}")
 
-
-# Compute confusion matrix: [[TN, FP], [FN, TP]]
 cm = confusion_matrix(y_true, y_pred)
+
 
 # -----------------------
 # Random Sampling and Visualization
@@ -376,7 +373,7 @@ def save_results_to_csv(results, label_dict=None, split_name="test", output_path
 
     print(f"Saved {split_name} results to {filename}")
 
-save_results_to_csv(val_results, label_dict=None, split_name="validation")  # no labels for val
+#save_results_to_csv(val_results, label_dict=None, split_name="validation")  # no labels for val
 save_results_to_csv(test_results, label_dict=label_dict, split_name="test")  # uses labels
 
 

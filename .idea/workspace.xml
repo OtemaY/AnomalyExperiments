@@ -6,6 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="a8483c5b-ee33-41cb-ac78-1d8efaacfba7" name="Changes" comment="first commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/experiments/augmented_data/unsupervised/ConvolutionalAutoEncoderAugmented/convautoaug.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/augmented_data/unsupervised/ConvolutionalAutoEncoderAugmented/convautoaug.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/experiments/augmented_data/unsupervised/EfficientEncodeAugmented/efficientaug.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/augmented_data/unsupervised/EfficientEncodeAugmented/efficientaug.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

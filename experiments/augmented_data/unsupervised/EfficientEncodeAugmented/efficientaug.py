@@ -112,7 +112,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # -----------------------
 
 # Training dataset: all normal images (do not need filenames)
-train_data_path = "/mnt/anom_proj/data/New/train"  # Update path if needed
+train_data_path = "/mnt/anom_proj/data/New/augnormalssym"  # Update path if needed
 train_dataset = CustomImageDataset(root_dir=train_data_path, transform=transform, return_filename=False)
 train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
@@ -134,7 +134,7 @@ test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 model = AugEfficientNet_Encode().to(device)
 model_name = model.__class__.__name__
 
-print(f"Training {model_name} on grayscale concrete data...")
+print(f"Training {model_name} on augmented concrete data...")
 
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -286,7 +286,7 @@ print("Validation anomalies detected:", val_anomaly_count, "out of", len(val_dat
 print("Test anomalies detected:", test_anomaly_count, "out of", len(test_dataset))
 
 # Load ground truth labels CSV
-labels_csv_path = "/mnt/anom_proj/data/New/labels.csv"  # Update this if needed
+labels_csv_path = "/mnt/anom_proj/data/New/augnormalssym/augmented_unsupe.csv"  # Update this if neededlabels_df = pd.read_csv(labels_csv_path)
 labels_df = pd.read_csv(labels_csv_path)
 label_dict = {row['filename']: row['label'] for _, row in labels_df.iterrows() if row['split'] == 'test'}
 
@@ -361,7 +361,7 @@ def save_results_to_csv(results, label_dict=None, split_name="test", output_path
     print(f"Saved {split_name} results to {filename}")
 
 
-save_results_to_csv(val_results, label_dict=None, split_name="validation")
+#save_results_to_csv(val_results, label_dict=None, split_name="validation")
 save_results_to_csv(test_results, label_dict=label_dict, split_name="test")
 
 
