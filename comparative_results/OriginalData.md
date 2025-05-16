@@ -20,14 +20,21 @@ Highest F1 Score:
 2. CNN (Supervised)
 3. Distillation Network
 4. EfficientNet
-5. Convolutional AutoEncoder (0.8028)
+5. Convolutional AutoEncoder (0.8874)
 
 Lowest False Positives:
 1. ResNet18 (Supervised) (3)
 2. CNN (Supervised)
-3. EfficientNet
+3. EfficientNet 
 4. Distillation Network
 5. Convolutional AutoEncoder (65)
+
+Lowest False Negatives:
+1. ResNet18 (Supervised) (7)
+2. CNN (Supervised) 
+3. Distillation Network 
+4. EfficientNet
+5. Convolutional AutoEncoder (1972)
 
 Smallest Model Size:
 1. Convolutional AutoEncoder (0.18mb)
