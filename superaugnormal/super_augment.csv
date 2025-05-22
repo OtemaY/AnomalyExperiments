@@ -1,0 +1,11 @@
+split,filename,label
+train,neg_train_4514_negaug1.jpg,0
+train,neg_train_4514.jpg,0
+train,neg_train_4526_synthnorm2.jpg,0
+train,pos_val_8498.jpg,1
+train,pos_val_8498_synth1.jpg,1
+train,neg_train_4526_synthnorm1.jpg,0
+train,pos_val_8498_synthanom1.jpg,1
+train,pos_val_8500_synthanom2.jpg,1
+train,pos_val_8500.jpg,1
+train,neg_train_4526.jpg,0
