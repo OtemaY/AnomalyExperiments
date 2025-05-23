@@ -1,3 +1,4 @@
+# This script is for running a CNN Model for supervised learning
 import os
 import pandas as pd
 from PIL import Image
@@ -6,273 +7,199 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
-import torchvision.models as models
 import matplotlib.pyplot as plt
 import time
 from datetime import datetime
 import numpy as np
 import random
 from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score, accuracy_score
-import pandas as pd
 import csv
 import seaborn as sns
 
 # Mapping from CSV split names to actual folder names
 SPLIT_TO_FOLDER = {
-    'train': 'output_train',
-    'validation': 'super_val',
+    'train': 'superaugnormal',
+    'val': 'output_val'
 }
 
 class AnomalyDataset(Dataset):
     def __init__(self, csv_file, split, root_dir, transform=None, train_only_normals=True):
         self.data = pd.read_csv(csv_file)
         self.data = self.data[self.data['split'] == split]
-
         if train_only_normals and split == 'train':
             self.data = self.data[self.data['label'] == 0]
-
         self.root_dir = root_dir
         self.transform = transform
-        self.split = split  # store split for use in __getitem__
+        self.split = split
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
         img_filename = self.data.iloc[idx]['filename']
-        # Map split name to actual folder name
-        folder = SPLIT_TO_FOLDER.get(self.split, self.split)  # fallback to split if no mapping
-
+        folder = SPLIT_TO_FOLDER.get(self.split, self.split)
         img_path = os.path.join(self.root_dir, folder, img_filename)
         image = Image.open(img_path).convert('RGB')
         label = int(self.data.iloc[idx]['label'])
-
         if self.transform:
             image = self.transform(image)
-
         return image, label
 
-
-
 # ---- Data Preparation ----
-img_size=224
-
+img_size = 224
 transform = transforms.Compose([
-    transforms.Resize((224, 224)),
+    transforms.Resize((img_size, img_size)),
     transforms.ToTensor(),
 ])
 
-# Update paths to match your new file structure
-csv_file = "/mnt/anom_proj/data/New/split_labels.csv"  # CSV file with paths to images and labels
-root_dir = "/mnt/anom_proj/data/New"  # Root directory for images (train, validation, etc.)
+csv_file = "/mnt/anom_proj/data/New/superaugnormal/super_augment.csv"
+root_dir  = "/mnt/anom_proj/data/New/"
 
-# Create datasets (train only normal images for training)
-train_dataset = AnomalyDataset(csv_file=csv_file, split='train', root_dir=root_dir, transform=transform, train_only_normals=False)
-val_dataset = AnomalyDataset(csv_file=csv_file, split='validation', root_dir=root_dir, transform=transform, train_only_normals=False)
+train_dataset = AnomalyDataset(csv_file, 'train', root_dir, transform, train_only_normals=False)
+val_dataset   = AnomalyDataset(csv_file, 'val', root_dir, transform, train_only_normals=False)
+test_dataset  = AnomalyDataset(csv_file, 'test', root_dir, transform, train_only_normals=False)
 
-# Create DataLoader for batch loading
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-
-# ---- Test Dataset ----
-# Add a test dataset after training and validation
-test_dataset = AnomalyDataset(csv_file=csv_file, split='test', root_dir=root_dir, transform=transform, train_only_normals=False)
-test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+val_loader   = DataLoader(val_dataset,   batch_size=32, shuffle=False)
+test_loader  = DataLoader(test_dataset,  batch_size=32, shuffle=False)
 
 # ---- Model Setup ----
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# Load a pre-trained ResNet18 and modify the final fully connected layer
-model = models.resnet18(pretrained=True)
-model.fc = nn.Linear(model.fc.in_features, 2)  # 2 output classes: normal and anomaly
-model = model.to(device)
+class AugCustomCNN(nn.Module):
+    def __init__(self, img_size=224, num_pools=5):
+        super(AugCustomCNN, self).__init__()
+        # Five conv+pool blocks
+        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(16, 16, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(16, 16, kernel_size=3, padding=1)
+        self.conv4 = nn.Conv2d(16, 16, kernel_size=3, padding=1)
+        self.conv5 = nn.Conv2d(16, 16, kernel_size=3, padding=1)
+        self.relu  = nn.ReLU()
+        self.pool  = nn.MaxPool2d(2, 2)
+
+        # compute spatial size after all the pooling layers
+        # e.g. 224 // (2**5) == 7
+        final_spatial = img_size // (2 ** num_pools)
+
+        self.flatten     = nn.Flatten()
+        self.fc1         = nn.Linear(16 * final_spatial * final_spatial, 128)
+        self.hidden_relu = nn.ReLU()
+        self.fc2         = nn.Linear(128, 1)
+        self.sigmoid     = nn.Sigmoid()
+
+    def forward(self, x):
+        x = self.pool(self.relu(self.conv1(x)))
+        x = self.pool(self.relu(self.conv2(x)))
+        x = self.pool(self.relu(self.conv3(x)))
+        x = self.pool(self.relu(self.conv4(x)))
+        x = self.pool(self.relu(self.conv5(x)))
+        x = self.flatten(x)
+        x = self.hidden_relu(self.fc1(x))
+        x = self.sigmoid(self.fc2(x))
+        return x
+
+model = AugCustomCNN().to(device)
 model_name = model.__class__.__name__
 
-
-
-# Extract labels from training dataset (make sure train_only_normals=False to include anomalies)
-train_labels = train_dataset.data['label'].values
-
-# Count samples per class
-class_counts = np.bincount(train_labels)
-print(f"Class counts: {class_counts}")
-
-# Compute class weights: inverse frequency
-class_weights = 1. / class_counts
-print(f"Class weights (inverse frequency): {class_weights}")
-
-# Normalize weights (optional)
-class_weights = class_weights / class_weights.sum()
-print(f"Normalized class weights: {class_weights}")
-
-# Convert to torch tensor and move to device
-weights_tensor = torch.FloatTensor(class_weights).to(device)
-
-# Define loss with class weights
-criterion = nn.CrossEntropyLoss(weight=weights_tensor)
-
-
 # ---- Loss and Optimizer ----
-#criterion = nn.CrossEntropyLoss()  # CrossEntropyLoss expects raw logits
-optimizer = optim.Adam(model.parameters(), lr=1e-4)
+criterion = nn.BCELoss()
+optimizer = optim.RMSprop(model.parameters(), lr=1e-4)
 
-# ---- Lists to Store Losses ----
-train_losses = []
-val_losses = []
-
-# ---- Training and Validation Loop ----
-num_epochs = 30  # You can increase this for more training
+# ---- Train & Validation ----
+train_losses, val_losses = [], []
+num_epochs = 30
 train_start = time.time()
 
 for epoch in range(num_epochs):
     print(f'Epoch [{epoch+1}/{num_epochs}]')
-
-    # Training phase
+    # Training
     model.train()
     running_loss = 0.0
     for images, labels in train_loader:
         images = images.to(device)
-        labels = labels.to(device)
-
-        outputs = model(images)  # Raw logits from the model
-        loss = criterion(outputs, labels)  # Calculate the loss
-
+        labels = labels.to(device).float().unsqueeze(1)
+        outputs = model(images)
+        loss = criterion(outputs, labels)
         optimizer.zero_grad()
-        loss.backward()  # Backpropagate the gradients
-        optimizer.step()  # Update the model's parameters
-
+        loss.backward()
+        optimizer.step()
         running_loss += loss.item()
-
     avg_train_loss = running_loss / len(train_loader)
-    train_losses.append(avg_train_loss)  # Store the training loss for plotting
-    print(f'Train Loss: {avg_train_loss:.4f}')
+    train_losses.append(avg_train_loss)
+    print(f'  Train Loss: {avg_train_loss:.4f}')
 
-    # Validation phase
+    # Validation
     model.eval()
     running_val_loss = 0.0
-    with torch.no_grad():  # No need to compute gradients for validation
+    with torch.no_grad():
         for images, labels in val_loader:
             images = images.to(device)
-            labels = labels.to(device)
-
-            outputs = model(images)  # Get raw logits
-            loss = criterion(outputs, labels)
-            running_val_loss += loss.item()
-
+            labels = labels.to(device).float().unsqueeze(1)
+            outputs = model(images)
+            running_val_loss += criterion(outputs, labels).item()
     avg_val_loss = running_val_loss / len(val_loader)
-    val_losses.append(avg_val_loss)  # Store the validation loss for plotting
-    print(f'Val Loss: {avg_val_loss:.4f}')
+    val_losses.append(avg_val_loss)
+    print(f'  Val   Loss: {avg_val_loss:.4f}')
 
-train_end = time.time()
-train_duration = train_end - train_start
+train_duration = time.time() - train_start
+torch.save(model.state_dict(), f"models/{model_name}_final.pth")
 
-# ---- Plotting Training and Validation Loss ----
+# ---- Plot Loss Curve ----
 os.makedirs("results/plots", exist_ok=True)
-plt.figure(figsize=(12, 6))
-
-# Number of epochs
-epochs_run = len(train_losses)
-
-# Plot the training and validation loss curves
-plt.plot(range(1, epochs_run+1), train_losses, marker='o', label="Training Loss")
-plt.plot(range(1, epochs_run+1), val_losses, marker='o', label="Validation Loss")
-
-plt.xlabel("Epoch")
-plt.ylabel("Loss")
-plt.title(f"{model.__class__.__name__} Training vs Validation Loss over {epochs_run} epochs")
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-
-# Save the plot
-plt.savefig(f"results/plots/{model.__class__.__name__}_loss_curve.png")
-plt.xlim(0, epochs_run + 1)
-
-# Adjust y-axis to cover a bit beyond the min and max losses
-ymin = min(min(train_losses), min(val_losses)) - 0.1
-ymax = max(max(train_losses), max(val_losses)) + 0.1
-plt.ylim(ymin, ymax)
-
-# Show the plot
+plt.figure(figsize=(12,6))
+plt.plot(range(1, num_epochs+1), train_losses, marker='o', label="Train Loss")
+plt.plot(range(1, num_epochs+1), val_losses,   marker='o', label="Val Loss")
+plt.xlabel("Epoch"); plt.ylabel("Loss")
+plt.title(f"{model_name} Loss over {num_epochs} Epochs")
+plt.legend(); plt.grid(True); plt.tight_layout()
+plt.savefig(f"results/plots/{model_name}_loss_curve.png")
 plt.show()
 
-print('Training and Validation Complete.')
-
-
-# ---- Testing and Saving Predictions ----
+# ---- Testing & Metrics ----
 print("\nModel Testing")
 test_start = time.time()
-
 model.eval()
-running_test_loss = 0.0
-correct = 0
-total = 0
-
-test_records = []  # List of dicts: each dict will store filename, true label, predicted label
+running_test_loss, correct, total = 0.0, 0, 0
+test_records = []
 
 with torch.no_grad():
     for idx, (images, labels) in enumerate(test_loader):
         images = images.to(device)
-        labels = labels.to(device)
-
+        labels = labels.to(device).float().unsqueeze(1)
         outputs = model(images)
-        loss = criterion(outputs, labels)
-        running_test_loss += loss.item()
-
-        _, predicted = torch.max(outputs.data, 1)
-
+        running_test_loss += criterion(outputs, labels).item()
+        preds = (outputs > 0.5).int()
         total += labels.size(0)
-        correct += (predicted == labels).sum().item()
+        correct += (preds == labels.int()).sum().item()
 
-        # Get filenames from dataset
-        batch_start_idx = idx * test_loader.batch_size
-        filenames = test_dataset.data.iloc[batch_start_idx:batch_start_idx + images.size(0)]['filename'].tolist()
-
-        # Save results to memory
-        for fname, true_label, pred_label in zip(filenames, labels.cpu().numpy(), predicted.cpu().numpy()):
-            test_records.append({
-                "filename": fname,
-                "true_label": int(true_label),
-                "predicted_label": int(pred_label)
-            })
+        start = idx * test_loader.batch_size
+        fnames = test_dataset.data.iloc[start:start+images.size(0)]['filename'].tolist()
+        for f, t, p in zip(fnames, labels.cpu().numpy().flatten(), preds.cpu().numpy().flatten()):
+            test_records.append({"filename": f, "true_label": int(t), "predicted_label": int(p)})
 
 avg_test_loss = running_test_loss / len(test_loader)
 test_acc = 100 * correct / total
-print(f'Test Loss: {avg_test_loss:.4f} | Test Accuracy: {test_acc:.2f}%')
+print(f"Test Loss: {avg_test_loss:.4f} | Test Acc: {test_acc:.2f}%")
+inference_duration = time.time() - test_start
 
-test_end = time.time()
-inference_duration = test_end - test_start
-print('Testing Complete.')
-
-# ---- Evaluation from test_records (without reading CSV) ----
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-
-y_true = [record["true_label"] for record in test_records]
-y_pred = [record["predicted_label"] for record in test_records]
-
-acc = accuracy_score(y_true, y_pred)
-prec = precision_score(y_true, y_pred, zero_division=0)
-rec = recall_score(y_true, y_pred, zero_division=0)
-f1 = f1_score(y_true, y_pred, zero_division=0)
+y_true = [r["true_label"] for r in test_records]
+y_pred = [r["predicted_label"] for r in test_records]
+acc, prec, rec, f1 = (
+    accuracy_score(y_true, y_pred),
+    precision_score(y_true, y_pred, zero_division=0),
+    recall_score(y_true, y_pred, zero_division=0),
+    f1_score(y_true, y_pred, zero_division=0),
+)
 cm = confusion_matrix(y_true, y_pred)
-
-print("\nEvaluation Metrics:")
-print(f"Accuracy:  {acc:.4f}")
-print(f"Precision: {prec:.4f}")
-print(f"Recall:    {rec:.4f}")
-print(f"F1 Score:  {f1:.4f}")
-
+print(f"\nAccuracy: {acc:.4f}\nPrecision: {prec:.4f}\nRecall: {rec:.4f}\nF1 Score: {f1:.4f}")
 print("\nConfusion Matrix:")
 print(cm)
 
-# ---- Save Test Results to CSV ----
-results_df = pd.DataFrame(test_records)
 os.makedirs('results/plots/test_results', exist_ok=True)
-results_csv_path = f"results/plots/test_results/{model_name}_test_results.csv"
-results_df.to_csv(results_csv_path, index=False)
+pd.DataFrame(test_records).to_csv(f"results/plots/test_results/{model_name}_test_results.csv", index=False)
 
-print(f"Test results saved to {results_csv_path}")
-
+# ---- Experiment Logging ----
 patience =0
 threshold = 0.0
 

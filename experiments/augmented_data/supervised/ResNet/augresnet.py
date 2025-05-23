@@ -19,8 +19,8 @@ import seaborn as sns
 
 # Mapping from CSV split names to actual folder names
 SPLIT_TO_FOLDER = {
-    'train': 'output_train',
-    'validation': 'super_val',
+    'train': 'superaugnormal',
+    'val': 'super_val',
 }
 
 class AnomalyDataset(Dataset):
@@ -63,12 +63,12 @@ transform = transforms.Compose([
 ])
 
 # Update paths to match your new file structure
-csv_file = "/mnt/anom_proj/data/New/split_labels.csv"  # CSV file with paths to images and labels
+csv_file = "/mnt/anom_proj/data/New/superaugnormal/super_augment.csv"
 root_dir = "/mnt/anom_proj/data/New"  # Root directory for images (train, validation, etc.)
 
 # Create datasets (train only normal images for training)
 train_dataset = AnomalyDataset(csv_file=csv_file, split='train', root_dir=root_dir, transform=transform, train_only_normals=False)
-val_dataset = AnomalyDataset(csv_file=csv_file, split='validation', root_dir=root_dir, transform=transform, train_only_normals=False)
+val_dataset = AnomalyDataset(csv_file=csv_file, split='val', root_dir=root_dir, transform=transform, train_only_normals=False)
 
 # Create DataLoader for batch loading
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
@@ -86,10 +86,11 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = models.resnet18(pretrained=True)
 model.fc = nn.Linear(model.fc.in_features, 2)  # 2 output classes: normal and anomaly
 model = model.to(device)
-model_name = model.__class__.__name__
+model_name = "AugResNet" #model.__class__.__name__
 
 
 
+# Extract labels from training dataset (make sure train_only_normals=False to include anomalies)
 # Extract labels from training dataset (make sure train_only_normals=False to include anomalies)
 train_labels = train_dataset.data['label'].values
 
@@ -121,7 +122,7 @@ train_losses = []
 val_losses = []
 
 # ---- Training and Validation Loop ----
-num_epochs = 30  # You can increase this for more training
+num_epochs = 1  # You can increase this for more training
 train_start = time.time()
 
 for epoch in range(num_epochs):
@@ -281,7 +282,7 @@ def log_experiment_run(model, criterion, optimizer, train_dataloader, val_datalo
                        threshold, acc, prec, rec, f1, cm,
                        save_model=True, save_paths=True, log_csv=True, img_size=224):
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    model_name = model.__class__.__name__
+    model_name = "AugResNet" #model.__class__.__name__
     version_prefix = f"{model_name}_{timestamp}"
 
     if save_model:
