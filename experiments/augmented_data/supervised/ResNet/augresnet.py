@@ -180,13 +180,13 @@ plt.plot(range(1, epochs_run+1), val_losses, marker='o', label="Validation Loss"
 
 plt.xlabel("Epoch")
 plt.ylabel("Loss")
-plt.title(f"{model.__class__.__name__} Training vs Validation Loss over {epochs_run} epochs")
-plt.legend()
+plt.title(f"{model_name} Training vs Validation Loss over {epochs_run} epochs")plt.legend()
 plt.grid(True)
 plt.tight_layout()
 
 # Save the plot
-plt.savefig(f"results/plots/{model.__class__.__name__}_loss_curve.png")
+#plt.savefig(f"results/plots/{model.__class__.__name__}_loss_curve.png")
+plt.savefig(f"results/plots/{model_name}_loss_curve.png")
 plt.xlim(0, epochs_run + 1)
 
 # Adjust y-axis to cover a bit beyond the min and max losses

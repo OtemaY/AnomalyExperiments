@@ -6,7 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="a8483c5b-ee33-41cb-ac78-1d8efaacfba7" name="Changes" comment="first commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/comparative_results/AugmentedData.md" beforeDir="false" afterPath="$PROJECT_DIR$/comparative_results/AugmentedData.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/experiments/augmented_data/supervised/ResNet/augresnet.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/augmented_data/supervised/ResNet/augresnet.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/experiment_log.csv" beforeDir="false" afterPath="$PROJECT_DIR$/logs/experiment_log.csv" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -88,7 +88,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1745769211045</updated>
-      <workItem from="1747930586380" duration="12191000" />
+      <workItem from="1747930586380" duration="14389000" />
     </task>
     <task id="LOCAL-00001" summary="first commit">
       <option name="closed" value="true" />
