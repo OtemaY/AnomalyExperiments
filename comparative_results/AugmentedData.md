@@ -1,46 +1,43 @@
 Comparative results with Augmented Data
 
 Fastest Training Time:
-1. Convolutional AutoEncoder (1476.76s)
-2. CNN (Supervised)
+1. CNN (Supervised) (3618.15s)
+2. Convolutional AutoEncoder
 3. EfficientNet
-4. Distillation Network 
-5. ResNet18 (Supervised) (20304.28s)
-
+4. ResNet18 (Supervised)
+5. PDN (35170.74s)
+   
 Fastest Inference Time:
-1. Convolutional AutoEncoder (11.18s)
-2. EfficientNet 
-3. CNN (Supervised)
-4. ResNet18 (Supervised) 
-5. Distillation Network (151.44s)
-
+1. CNN (Supervised) (22.59s)
+2. Convolutional AutoEncoder
+3. ResNet18 (Supervised)
+4. EfficientNet
+5. PDN (407.11s)
 
 Highest F1 Score:
 1. ResNet18 (Supervised) (0.9997)
 2. CNN (Supervised)
-3. Convolutional AutoEncoder
-4. EfficientNet
-5. Distillation Network (0.7855)
-
+3. EfficientNet
+4. Convolutional AutoEncoder
+5. PDN (0.8266)
 
 Lowest False Positives:
 1. ResNet18 (Supervised) (4)
 2. CNN (Supervised)
-3. Distillation Network (23)
-4. Convolutional AutoEncoder
-5. EfficientNet (134)
-
+3. PDN
+4. EfficientNet
+5. Convolutional AutoEncoder (64)
+   
 Lowest False Negatives:
 1. ResNet18 (Supervised) (3)
 2. CNN (Supervised)
 3. Convolutional AutoEncoder
-4. EfficientNet 
-5. Distillation Network (3518)
-
+4. EfficientNet
+5. PDN (2940)
+   
 Smallest Model Size:
 1. Convolutional AutoEncoder (0.18mb)
 2. CNN (Supervised)
-3. Distillation Network
+3. PDN
 4. EfficientNet
 5. ResNet18 (Supervised) (42.72mb)
-
