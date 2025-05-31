@@ -33,18 +33,18 @@ class ConvAutoencoder(nn.Module):
     def __init__(self):
         super(ConvAutoencoder, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=3, stride=2, padding=1),  # 128 -> 64
+            nn.Conv2d(1, 16, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
-            nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1),  # 64 -> 32
+            nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1)  # 32 -> 16
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1)
         )
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1),  # 16 -> 32
+            nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(32, 16, kernel_size=3, stride=2, padding=1, output_padding=1),  # 32 -> 64
+            nn.ConvTranspose2d(32, 16, kernel_size=3, stride=2, padding=1, output_padding=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(16, 1, kernel_size=3, stride=2, padding=1, output_padding=1),  # 64 -> 128
+            nn.ConvTranspose2d(16, 1, kernel_size=3, stride=2, padding=1, output_padding=1),
             nn.Sigmoid()
         )
 
@@ -122,7 +122,7 @@ train_losses = []
 val_losses = []
 
 best_val_loss = float('inf')
-patience = 3
+patience = 5
 counter = 0
 
 epochs = 30  # You can still cap it, early stopping will kick in

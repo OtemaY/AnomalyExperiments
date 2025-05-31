@@ -38,7 +38,7 @@ Lowest False Negatives:
 
 Smallest Model Size:
 1. Convolutional AutoEncoder (0.18mb)
-2. Distillation Network 
-3. CNN (Supervised)
+2. CNN (Supervised)
+3. Distillation Network 
 4. EfficientNet
 5. ResNet18 (Supervised) (42.72mb)

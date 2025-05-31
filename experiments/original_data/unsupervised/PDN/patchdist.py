@@ -166,7 +166,7 @@ train_losses = []
 val_losses = []
 
 best_val_loss = float('inf')
-patience = 3
+patience = 5
 counter = 0
 
 epochs = 30  # Adjust the number of distillation epochs as needed
