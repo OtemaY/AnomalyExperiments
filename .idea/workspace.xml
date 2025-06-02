@@ -6,9 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="a8483c5b-ee33-41cb-ac78-1d8efaacfba7" name="Changes" comment="first commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/comparative_results/OriginalData.md" beforeDir="false" afterPath="$PROJECT_DIR$/comparative_results/OriginalData.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/experiments/original_data/unsupervised/ConvolutionalAutoEncoder/convauto.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/original_data/unsupervised/ConvolutionalAutoEncoder/convauto.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/plots/confusion_matrix_ResNet_2025-05-02_03-28-49.png" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -91,7 +88,7 @@
       <updated>1745769211045</updated>
       <workItem from="1747930586380" duration="15914000" />
       <workItem from="1748251973621" duration="17624000" />
-      <workItem from="1748521214455" duration="7338000" />
+      <workItem from="1748521214455" duration="10561000" />
     </task>
     <task id="LOCAL-00001" summary="first commit">
       <option name="closed" value="true" />
