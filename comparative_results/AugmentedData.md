@@ -17,16 +17,16 @@ Fastest Inference Time:
 Highest F1 Score:
 1. ResNet18 (Supervised) (0.9997)
 2. CNN (Supervised)
-3. EfficientNet
-4. Convolutional AutoEncoder
+3. Convolutional AutoEncoder
+4. EfficientNet 
 5. PDN (0.8266)
 
 Lowest False Positives:
 1. ResNet18 (Supervised) (4)
 2. CNN (Supervised)
 3. PDN
-4. EfficientNet
-5. Convolutional AutoEncoder (64)
+4. Convolutional AutoEncoder
+5. EfficientNet (124)
    
 Lowest False Negatives:
 1. ResNet18 (Supervised) (3)
