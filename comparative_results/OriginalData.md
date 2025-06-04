@@ -3,7 +3,7 @@ Comparative results with Original Data
 Fastest Training Time:
 1. Convolutional AutoEncoder (706.63s)
 2. CNN (Supervised)
-3. ResNet18 (Supervised) (2804.12s)
+3. ResNet18 (Supervised)
 4. EfficientNet
 5. Patch Description Network (PDN) (39785.32s)
    
